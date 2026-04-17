@@ -1,0 +1,9 @@
+core/BlackjackStrategy.cpp
+core/Shoe.cpp
+core/Hand.cpp
+core/BlackjackStats.cpp
+core/BlackjackGame.cpp
+core/Card.cpp
+core/SessionStats.cpp
+core/SessionManager.cpp
+core/Bankroll.cpp

@@ -1,0 +1,8 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Solution Items/" />
+  <Project Path="SpaceCasinoUI/SpaceCasinoUI.vcxproj" Id="88722216-1d79-4724-a8a3-769ebfca8346" />
+</Solution>
