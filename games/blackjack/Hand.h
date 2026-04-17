@@ -35,7 +35,7 @@ public:
     bool isSoft() const;
     bool canSplit() const;
 
-    vector<Card> getCards() const;
+    const vector<Card>& getCards() const;
     string toString() const;
 };
 

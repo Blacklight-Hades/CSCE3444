@@ -138,6 +138,7 @@ void CasinoApp::processEvents()
                             slotsUI->setSessionStats(sessionStats.get());
                         }
                     }
+                    statsUI->setReturnState(AppState::MainMenu);
                     statsUI->updateStats();
                     currentState = AppState::Stats;
                 }
@@ -176,7 +177,8 @@ void CasinoApp::processEvents()
             else if (currentState == AppState::Blackjack)
             {
                 bool backToMenu = false;
-                blackjackUI->handleScreenClick(mousePos, backToMenu);
+                bool openStats = false;
+                blackjackUI->handleScreenClick(mousePos, backToMenu, openStats);
 
                 if (backToMenu)
                 {
@@ -187,11 +189,18 @@ void CasinoApp::processEvents()
                     syncSlotsBankroll();
                     currentState = AppState::GameSelect;
                 }
+                else if (openStats)
+                {
+                    statsUI->setReturnState(AppState::Blackjack);
+                    statsUI->updateStats();
+                    currentState = AppState::Stats;
+                }
             }
             else if (currentState == AppState::Slots)
             {
                 bool backToMenu = false;
-                slotsUI->handleScreenClick(mousePos, backToMenu);
+                bool openStats = false;
+                slotsUI->handleScreenClick(mousePos, backToMenu, openStats);
 
                 if (backToMenu)
                 {
@@ -202,6 +211,12 @@ void CasinoApp::processEvents()
                     syncBlackjackBankroll();
                     currentState = AppState::GameSelect;
                 }
+                else if (openStats)
+                {
+                    statsUI->setReturnState(AppState::Slots);
+                    statsUI->updateStats();
+                    currentState = AppState::Stats;
+                }
             }
             else if (currentState == AppState::Stats)
             {
@@ -210,7 +225,7 @@ void CasinoApp::processEvents()
 
                 if (backToMenu)
                 {
-                    currentState = AppState::MainMenu;
+                    currentState = statsUI->returnState;
                 }
             }
         }

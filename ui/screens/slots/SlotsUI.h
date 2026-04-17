@@ -14,7 +14,7 @@ public:
     double getCurrentBankroll() const;
     void setSessionStats(class SessionStats* stats);
 
-    void handleScreenClick(sf::Vector2f mousePos, bool& backToMenu);
+    void handleScreenClick(sf::Vector2f mousePos, bool& backToMenu, bool& openStats);
     void handleTextEntered(unsigned int unicode);
     void handleBackspace();
     void draw(sf::RenderWindow& window);
@@ -34,6 +34,7 @@ private:
 
     sf::RectangleShape spinButton;
     sf::RectangleShape backButton;
+    sf::RectangleShape statsButton;
     sf::RectangleShape plus10Button;
     sf::RectangleShape minus10Button;
     sf::RectangleShape betInputBox;
@@ -43,6 +44,7 @@ private:
     double currentBet;
     double lastPayout;
     
+    sf::Text statsText;
     sf::Text plus10Text;
     sf::Text minus10Text;
     sf::Text betInputBoxText;
@@ -52,6 +54,6 @@ private:
 
     void centerTextInButton(sf::Text& text, const sf::RectangleShape& button);
     void refreshBetInputText();
-    std::string symbolToString(char c) const;
+    void drawGraphicSymbol(sf::RenderWindow& window, char symbol, float x, float y, float sizeX, float sizeY) const;
     void updateText();
 };

@@ -10,15 +10,13 @@ BlackjackUI::BlackjackUI(sf::Font& sharedFont)
     titleText(font, "BLACKJACK", 54),
     bankrollText(font, "", 28),
     betText(font, "", 28),
-    dealerText(font, "", 24),
-    playerText(font, "", 24),
-    messageText(font, "", 24),
-    statsText(font, "", 24),
+    messageText(font, "", 32),
     hitText(font, "HIT", 20),
     standText(font, "STAND", 20),
     doubleText(font, "DOUBLE", 20),
     newRoundText(font, "NEW ROUND", 20),
     backText(font, "BACK TO MENU", 20),
+    statsText(font, "", 20),
     plus10Text(font, "+10", 18),
     minus10Text(font, "-10", 18),
     betInputBoxText(font, "", 20),
@@ -36,19 +34,14 @@ BlackjackUI::BlackjackUI(sf::Font& sharedFont)
     betText.setFillColor(sf::Color::White);
     betText.setPosition({ 20.f, 55.f });
 
-    dealerText.setFillColor(sf::Color(190, 235, 235));
-    dealerText.setPosition({ 0.f, 160.f });
-
-    messageText.setFillColor(sf::Color(190, 235, 235));
-    messageText.setPosition({ 0.f, 320.f });
-
-    playerText.setFillColor(sf::Color(190, 235, 235));
-    playerText.setPosition({ 0.f, 445.f });
+    messageText.setFillColor(sf::Color(230, 230, 255));
+    messageText.setPosition({ 0.f, 400.f });
 
     statsText.setFillColor(sf::Color::Yellow);
     statsText.setPosition({ 0.f, 0.f });
 
     setupButtons();
+    loadCardTextures();
     updateText();
 }
 
@@ -84,8 +77,11 @@ void BlackjackUI::setupButtons()
     doubleButton.setSize({ 150.f, 50.f });
     doubleButton.setPosition({ 415.f, 660.f });
 
-    newRoundButton.setSize({ 180.f, 50.f });
+    newRoundButton.setSize({ 150.f, 50.f });
     newRoundButton.setPosition({ 595.f, 660.f });
+
+    statsButton.setSize({ 150.f, 50.f });
+    statsButton.setPosition({ 830.f, 20.f });
 
     backButton.setSize({ 180.f, 50.f });
     backButton.setPosition({ 785.f, 660.f });
@@ -109,6 +105,7 @@ void BlackjackUI::setupButtons()
     doubleText.setFillColor(sf::Color::White);
     newRoundText.setFillColor(sf::Color::White);
     backText.setFillColor(sf::Color::White);
+    statsText.setFillColor(sf::Color::White);
     plus10Text.setFillColor(sf::Color::White);
     minus10Text.setFillColor(sf::Color::White);
     betInputBoxText.setFillColor(sf::Color::White);
@@ -118,6 +115,7 @@ void BlackjackUI::setupButtons()
     centerTextInButton(doubleText, doubleButton);
     centerTextInButton(newRoundText, newRoundButton);
     centerTextInButton(backText, backButton);
+    centerTextInButton(statsText, statsButton);
     centerTextInButton(plus10Text, plus10Button);
     centerTextInButton(minus10Text, minus10Button);
 }
@@ -178,124 +176,118 @@ void BlackjackUI::handleBackspace()
     }
 }
 
-std::string BlackjackUI::getDealerDisplay() const
+std::string BlackjackUI::getCardFilename(const Card& card) const
 {
-    if (!roundStarted)
+    std::string rankStr;
+    switch (card.getRank())
     {
-        return "Dealer\nNo round started";
+    case Rank::Two: rankStr = "2"; break;
+    case Rank::Three: rankStr = "3"; break;
+    case Rank::Four: rankStr = "4"; break;
+    case Rank::Five: rankStr = "5"; break;
+    case Rank::Six: rankStr = "6"; break;
+    case Rank::Seven: rankStr = "7"; break;
+    case Rank::Eight: rankStr = "8"; break;
+    case Rank::Nine: rankStr = "9"; break;
+    case Rank::Ten: rankStr = "10"; break;
+    case Rank::Jack: rankStr = "jack"; break;
+    case Rank::Queen: rankStr = "queen"; break;
+    case Rank::King: rankStr = "king"; break;
+    case Rank::Ace: rankStr = "ace"; break;
     }
 
-    if (game.isDealerHoleCardRevealed())
+    std::string suitStr;
+    switch (card.getSuit())
     {
-        return "Dealer\n" + game.getDealerHand().toString() +
-            "\nValue: " + std::to_string(game.getDealerValue());
+    case Suit::Hearts: suitStr = "hearts"; break;
+    case Suit::Diamonds: suitStr = "diamonds"; break;
+    case Suit::Clubs: suitStr = "clubs"; break;
+    case Suit::Spades: suitStr = "spades"; break;
     }
 
-    std::vector<Card> cards = game.getDealerHand().getCards();
-
-    if (cards.empty())
-    {
-        return "Dealer\nNo cards";
-    }
-
-    if (cards.size() == 1)
-    {
-        return "Dealer\n" + cards[0].toString();
-    }
-
-    return "Dealer\n" + cards[0].toString() + "  ??";
+    return rankStr + "_of_" + suitStr + ".png";
 }
 
-std::string BlackjackUI::getPlayerDisplay() const
+void BlackjackUI::loadCardTextures()
 {
-    if (!roundStarted)
+    // Load standard 52 deck
+    std::vector<Suit> suits = { Suit::Hearts, Suit::Diamonds, Suit::Clubs, Suit::Spades };
+    std::vector<Rank> ranks = {
+        Rank::Two, Rank::Three, Rank::Four, Rank::Five, Rank::Six, Rank::Seven,
+        Rank::Eight, Rank::Nine, Rank::Ten, Rank::Jack, Rank::Queen, Rank::King, Rank::Ace
+    };
+
+    std::string basePath = "playing-cards-assets-master/png/";
+
+    for (Suit s : suits)
     {
-        return "Player\nNo round started";
-    }
-
-    if (game.getHandCount() <= 1)
-    {
-        return "Player\n" + game.getPlayerHand().toString() +
-            "\nValue: " + std::to_string(game.getPlayerHand().getValue()) +
-            "\nBet: $" + std::to_string(static_cast<int>(currentBet));
-    }
-
-    std::string out = "Player Hands\n";
-
-    for (int i = 0; i < game.getHandCount(); ++i)
-    {
-        out += "Hand " + std::to_string(i + 1);
-
-        if (!game.isRoundOver() && i == game.getActiveHandIndex())
+        for (Rank r : ranks)
         {
-            out += " [ACTIVE]";
-        }
-
-        out += "\n";
-        out += game.getPlayerHand(i).toString();
-        out += "\nValue: " + std::to_string(game.getPlayerHand(i).getValue());
-
-        if (i < game.getHandCount() - 1)
-        {
-            out += "\n\n";
+            Card c(r, s);
+            std::string filename = getCardFilename(c);
+            sf::Texture tex;
+            if (tex.loadFromFile(basePath + filename))
+            {
+                cardTextures[filename] = std::move(tex);
+            }
         }
     }
 
-    out += "\nBet: $" + std::to_string(static_cast<int>(currentBet));
-    return out;
+    sf::Texture backTex;
+    if (backTex.loadFromFile(basePath + "back.png"))
+    {
+        cardTextures["back.png"] = std::move(backTex);
+    }
 }
 
-std::string BlackjackUI::shortenResultText(const std::string& text) const
+void BlackjackUI::drawCard(sf::RenderWindow& window, const Card& card, float x, float y) const
 {
-    if (text.find("Dealer Bust") != std::string::npos || text.find("Dealer bust") != std::string::npos)
+    std::string filename = getCardFilename(card);
+    
+    // We use .count() to safely check if our map has the key to avoid std::out_of_range
+    if (cardTextures.count(filename) > 0)
     {
-        return "Dealer busts. You win.";
-    }
+        sf::RectangleShape cardBg({ 100.f, 145.f });
+        cardBg.setPosition({ x, y });
+        cardBg.setFillColor(sf::Color::White);
+        window.draw(cardBg);
 
-    if (text.find("Player Bust") != std::string::npos || text.find("Player bust") != std::string::npos)
+        sf::Sprite sprite(cardTextures.at(filename));
+        sprite.setPosition({ x, y });
+        // Scale to a standard 100x145 pixel playing card
+        sprite.setScale({ 100.f / sprite.getTextureRect().size.x, 145.f / sprite.getTextureRect().size.y });
+        window.draw(sprite);
+    }
+    else
     {
-        return "Player busts. Dealer wins.";
+         sf::RectangleShape cardRect({ 100.f, 145.f });
+         cardRect.setPosition({ x, y });
+         cardRect.setFillColor(sf::Color::White);
+         window.draw(cardRect);
     }
-
-    if (text.find("Push") != std::string::npos || text.find("Tie") != std::string::npos)
-    {
-        return "Push.";
-    }
-
-    if (text.find("Blackjack") != std::string::npos)
-    {
-        return "Blackjack. You win.";
-    }
-
-    if (text.find("Player Win") != std::string::npos)
-    {
-        return "You win.";
-    }
-
-    if (text.find("Dealer Win") != std::string::npos)
-    {
-        return "Dealer wins.";
-    }
-
-    return text;
 }
 
-std::string BlackjackUI::getPostRoundStats() const
+void BlackjackUI::drawHiddenCard(sf::RenderWindow& window, float x, float y) const
 {
-    if (!roundStarted || !game.isRoundOver())
+    if (cardTextures.count("back.png") > 0)
     {
-        return "";
+        sf::RectangleShape cardBg({ 100.f, 145.f });
+        cardBg.setPosition({ x, y });
+        cardBg.setFillColor(sf::Color::White);
+        window.draw(cardBg);
+
+        sf::Sprite sprite(cardTextures.at("back.png"));
+        sprite.setPosition({ x, y });
+        sprite.setScale({ 100.f / sprite.getTextureRect().size.x, 145.f / sprite.getTextureRect().size.y });
+        window.draw(sprite);
     }
-
-    BlackjackRoundSummary summary = game.getRoundSummary();
-
-    std::string text;
-    text += "Starting Bankroll: $" + std::to_string(static_cast<int>(summary.startingBankroll)) + "\n";
-    text += "Ending Bankroll: $" + std::to_string(static_cast<int>(summary.endingBankroll)) + "\n";
-    text += "Net Change: $" + std::to_string(static_cast<int>(summary.netChange)) + "\n";
-    text += "Result: " + shortenResultText(game.getRoundResultText());
-
-    return text;
+    else
+    {
+        sf::RectangleShape cardRect({ 100.f, 145.f });
+        cardRect.setPosition({ x, y });
+        cardRect.setFillColor(sf::Color(140, 20, 20));
+        window.draw(cardRect);
+    }
 }
 
 std::string BlackjackUI::getStatusMessage() const
@@ -356,27 +348,12 @@ void BlackjackUI::updateText()
     bankrollText.setString("Bankroll: $" + std::to_string(static_cast<int>(game.getTableBalance())));
     betText.setString("Set Bet:");
 
-    dealerText.setString(getDealerDisplay());
     messageText.setString(getStatusMessage());
-    playerText.setString(getPlayerDisplay());
-    statsText.setString(getPostRoundStats());
-
-    auto dealerBounds = dealerText.getLocalBounds();
-    dealerText.setPosition({
-        500.f - dealerBounds.size.x / 2.f - dealerBounds.position.x,
-        160.f
-        });
 
     auto messageBounds = messageText.getLocalBounds();
     messageText.setPosition({
         500.f - messageBounds.size.x / 2.f - messageBounds.position.x,
-        320.f
-        });
-
-    auto playerBounds = playerText.getLocalBounds();
-    playerText.setPosition({
-        500.f - playerBounds.size.x / 2.f - playerBounds.position.x,
-        445.f
+        550.f
         });
 }
 
@@ -465,15 +442,20 @@ void BlackjackUI::handleGameClick(sf::Vector2f mousePos)
     updateText();
 }
 
-void BlackjackUI::handleScreenClick(sf::Vector2f mousePos, bool& backToMenu)
+void BlackjackUI::handleScreenClick(sf::Vector2f mousePos, bool& backToMenu, bool& openStats)
 {
     backToMenu = false;
+    openStats = false;
 
     if (backButton.getGlobalBounds().contains(mousePos))
     {
-        roundStarted = false;
-        updateText();
         backToMenu = true;
+        return;
+    }
+
+    if (statsButton.getGlobalBounds().contains(mousePos))
+    {
+        openStats = true;
         return;
     }
 
@@ -497,97 +479,45 @@ void BlackjackUI::draw(sf::RenderWindow& window)
         window.draw(star);
     }
 
-    sf::RectangleShape line1({ 880.f, 3.f });
-    line1.setPosition({ 58.f, 130.f });
-    line1.setFillColor(sf::Color(90, 210, 255));
-    window.draw(line1);
-
-    auto playerBounds = playerText.getGlobalBounds();
-
-    sf::RectangleShape line2({ 880.f, 3.f });
-    line2.setPosition({ 58.f, playerBounds.position.y + playerBounds.size.y + 20.f });
-    line2.setFillColor(sf::Color(90, 210, 255));
-    window.draw(line2);
-
     window.draw(titleText);
     window.draw(bankrollText);
     window.draw(betText);
 
-    if (roundStarted && game.isRoundOver())
+    if (roundStarted)
     {
-        auto drawCenteredYellowLine = [&](const std::string& text, float y, unsigned int size)
-            {
-                sf::Text line(font, text, size);
-                line.setFillColor(sf::Color::Yellow);
+        const auto& dealerHand = game.getDealerHand();
+        sf::Text dLabel(font, "Dealer", 26);
+        dLabel.setFillColor(sf::Color::Yellow);
+        dLabel.setPosition({ 100.f, 150.f });
+        window.draw(dLabel);
 
-                auto bounds = line.getLocalBounds();
-                line.setPosition({
-                    500.f - bounds.size.x / 2.f - bounds.position.x,
-                    y
-                    });
+        float dX = 100.f;
+        float dY = 190.f;
+        for (size_t i = 0; i < dealerHand.getCards().size(); ++i)
+        {
+            if (i == 1 && !game.isRoundOver())
+                drawHiddenCard(window, dX, dY);
+            else
+                drawCard(window, dealerHand.getCards()[i], dX, dY);
+            dX += 115.f;
+        }
 
-                window.draw(line);
-            };
+        const auto& playerHand = game.getPlayerHand();
+        sf::Text pLabel(font, "Player", 26);
+        pLabel.setFillColor(sf::Color::Green);
+        pLabel.setPosition({ 100.f, 360.f });
+        window.draw(pLabel);
 
-        float y = 150.f;
-
-        drawCenteredYellowLine(
-            "Dealer: " + game.getDealerHand().toString() +
-            " (" + std::to_string(game.getDealerValue()) + ")",
-            y,
-            26
-        );
-        y += 50.f;
-
-        drawCenteredYellowLine("Player Hands:", y, 26);
-        y += 36.f;
-
-        drawCenteredYellowLine(
-            game.getPlayerHand().toString() +
-            " (" + std::to_string(game.getPlayerHand().getValue()) + ")",
-            y,
-            26
-        );
-        y += 50.f;
-
-        drawCenteredYellowLine("Results:", y, 26);
-        y += 36.f;
-
-        drawCenteredYellowLine(shortenResultText(game.getRoundResultText()), y, 26);
-        y += 50.f;
-
-        drawCenteredYellowLine("Round Insight:", y, 26);
-        y += 36.f;
-
-        drawCenteredYellowLine("You played that hand well.", y, 26);
-        y += 50.f;
-
-        drawCenteredYellowLine("Post Round Stats", y, 26);
-        y += 36.f;
-
-        drawCenteredYellowLine(
-            "Bankroll: $" + std::to_string(static_cast<int>(game.getTableBalance())),
-            y,
-            26
-        );
-        y += 36.f;
-
-        drawCenteredYellowLine(
-            "Bet: $" + std::to_string(static_cast<int>(currentBet)),
-            y,
-            26
-        );
+        float pX = 100.f;
+        float pY = 400.f;
+        for (const auto& card : playerHand.getCards())
+        {
+            drawCard(window, card, pX, pY);
+            pX += 115.f;
+        }
     }
-    else
-    {
-        dealerText.setFillColor(sf::Color(190, 235, 235));
-        messageText.setFillColor(sf::Color(190, 235, 235));
-        playerText.setFillColor(sf::Color(190, 235, 235));
 
-        window.draw(dealerText);
-        window.draw(messageText);
-        window.draw(playerText);
-    }
+    window.draw(messageText);
 
     bool controlsLocked = (roundStarted && !game.isRoundOver());
 
@@ -619,6 +549,7 @@ void BlackjackUI::draw(sf::RenderWindow& window)
         : sf::Color(70, 70, 110)
     );
 
+    statsButton.setFillColor(sf::Color(60, 180, 60));
     backButton.setFillColor(sf::Color(180, 65, 85));
 
     window.draw(minus10Button);
@@ -629,6 +560,7 @@ void BlackjackUI::draw(sf::RenderWindow& window)
     window.draw(standButton);
     window.draw(doubleButton);
     window.draw(newRoundButton);
+    window.draw(statsButton);
     window.draw(backButton);
 
     window.draw(minus10Text);
@@ -640,5 +572,24 @@ void BlackjackUI::draw(sf::RenderWindow& window)
     window.draw(standText);
     window.draw(doubleText);
     window.draw(newRoundText);
+    window.draw(statsText);
     window.draw(backText);
+}
+
+std::string BlackjackUI::shortenResultText(const std::string& text) const
+{
+    // Search for the "Results:\n\tHand 1: " or just return a brief message based on outcome
+    auto pos = text.find("\nResults:\n\tHand 1: ");
+    if (pos != std::string::npos)
+    {
+        size_t start = pos + 19;
+        size_t end = text.find("\n", start);
+        return text.substr(start, end - start);
+    }
+    return "Round Over";
+}
+
+std::string BlackjackUI::getPostRoundStats() const
+{
+    return "";
 }

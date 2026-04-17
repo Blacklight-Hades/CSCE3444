@@ -13,12 +13,13 @@ SlotsUI::SlotsUI(sf::Font& sharedFont)
     payoutText(font, "", 24),
     backText(font, "BACK TO MENU", 20),
     spinText(font, "SPIN", 20),
-    plus10Text(font, "+10", 18),
-    minus10Text(font, "-10", 18),
-    betInputBoxText(font, "", 20),
     hasSpun(false),
     currentBet(50.0),
     lastPayout(0.0),
+    statsText(font, "VIEW STATS", 20),
+    plus10Text(font, "+10", 18),
+    minus10Text(font, "-10", 18),
+    betInputBoxText(font, "", 20),
     betInputString("50"),
     isTypingBet(false)
 {
@@ -37,8 +38,11 @@ SlotsUI::SlotsUI(sf::Font& sharedFont)
     payoutText.setFillColor(sf::Color::Yellow);
     payoutText.setPosition({ 0.f, 545.f });
 
-    spinButton.setSize({ 180.f, 50.f });
+    spinButton.setSize({ 150.f, 50.f });
     spinButton.setPosition({ 595.f, 660.f });
+
+    statsButton.setSize({ 150.f, 50.f });
+    statsButton.setPosition({ 830.f, 20.f });
 
     backButton.setSize({ 180.f, 50.f });
     backButton.setPosition({ 785.f, 660.f });
@@ -59,16 +63,16 @@ SlotsUI::SlotsUI(sf::Font& sharedFont)
 
     spinText.setFillColor(sf::Color::White);
     backText.setFillColor(sf::Color::White);
+    statsText.setFillColor(sf::Color::White);
     plus10Text.setFillColor(sf::Color::White);
     minus10Text.setFillColor(sf::Color::White);
     betInputBoxText.setFillColor(sf::Color::White);
 
     centerTextInButton(spinText, spinButton);
     centerTextInButton(backText, backButton);
+    centerTextInButton(statsText, statsButton);
     centerTextInButton(plus10Text, plus10Button);
     centerTextInButton(minus10Text, minus10Button);
-
-    updateText();
 }
 
 void SlotsUI::setStartingBankroll(double bankroll)
@@ -147,23 +151,77 @@ void SlotsUI::handleBackspace()
     }
 }
 
-std::string SlotsUI::symbolToString(char c) const
+void SlotsUI::drawGraphicSymbol(sf::RenderWindow& window, char symbol, float x, float y, float sizeX, float sizeY) const
 {
-    switch (c)
+    float cx = x + sizeX / 2.f;
+    float cy = y + sizeY / 2.f;
+
+    if (symbol == 'B') // BAR
     {
-    case 'B': return "BAR";
-    case 'V': return "7";
-    case 'J': return "J";
-    case 'Q': return "Q";
-    case 'K': return "K";
-    case 'T': return "10";
-    case 'S': return "STAR";
-    case 'A': return "ALIEN";
-    case 'M': return "MOON";
-    case 'R': return "ROCKET";
-    case 'W': return "2X";
-    case 'F': return "5X";
-    default:  return "?";
+        sf::RectangleShape bar({ sizeX - 40.f, sizeY - 40.f });
+        bar.setPosition({ x + 20.f, y + 20.f });
+        bar.setFillColor(sf::Color(50, 50, 180));
+        window.draw(bar);
+        sf::Text t(font, "BAR", 24);
+        t.setFillColor(sf::Color::White);
+        auto bounds = t.getLocalBounds();
+        t.setPosition({
+            cx - bounds.size.x / 2.f - bounds.position.x,
+            cy - bounds.size.y / 2.f - bounds.position.y
+        });
+        window.draw(t);
+    }
+    else if (symbol == 'V') // 7
+    {
+        sf::Text t(font, "7", 50);
+        t.setFillColor(sf::Color(220, 40, 40));
+        t.setStyle(sf::Text::Bold);
+        auto bounds = t.getLocalBounds();
+        t.setPosition({
+            cx - bounds.size.x / 2.f - bounds.position.x,
+            cy - bounds.size.y / 2.f - bounds.position.y
+        });
+        window.draw(t);
+    }
+    else if (symbol == 'M') // Moon
+    {
+        sf::CircleShape moon(sizeY / 3.f);
+        moon.setPosition({ cx - sizeY / 3.f, cy - sizeY / 3.f });
+        moon.setFillColor(sf::Color(220, 220, 220));
+        window.draw(moon);
+        sf::CircleShape crater(sizeY / 8.f);
+        crater.setPosition({ cx, cy - sizeY / 6.f });
+        crater.setFillColor(sf::Color(180, 180, 180));
+        window.draw(crater);
+    }
+    else
+    {
+        // Fallback for geometric generic rendering
+        sf::CircleShape circle(sizeY / 3.f);
+        circle.setPosition({ cx - sizeY / 3.f, cy - sizeY / 3.f });
+        
+        sf::Color c = sf::Color::White;
+        if (symbol == 'J') c = sf::Color(180, 50, 180);
+        else if (symbol == 'Q') c = sf::Color(50, 180, 180);
+        else if (symbol == 'K') c = sf::Color(180, 180, 50);
+        else if (symbol == 'T') c = sf::Color(180, 100, 50);
+        else if (symbol == 'S') c = sf::Color::Yellow;
+        else if (symbol == 'A') c = sf::Color::Green;
+        else if (symbol == 'R') c = sf::Color(200, 50, 50);
+        else if (symbol == 'W') c = sf::Color(100, 100, 255);
+        else if (symbol == 'F') c = sf::Color(255, 100, 255);
+
+        circle.setFillColor(c);
+        window.draw(circle);
+
+        sf::Text t(font, std::string(1, symbol), 24);
+        t.setFillColor(sf::Color::Black);
+        auto bounds = t.getLocalBounds();
+        t.setPosition({
+            cx - bounds.size.x / 2.f - bounds.position.x,
+            cy - bounds.size.y / 2.f - bounds.position.y
+        });
+        window.draw(t);
     }
 }
 
@@ -204,13 +262,20 @@ void SlotsUI::updateText()
         });
 }
 
-void SlotsUI::handleScreenClick(sf::Vector2f mousePos, bool& backToMenu)
+void SlotsUI::handleScreenClick(sf::Vector2f mousePos, bool& backToMenu, bool& openStats)
 {
     backToMenu = false;
+    openStats = false;
 
     if (backButton.getGlobalBounds().contains(mousePos))
     {
         backToMenu = true;
+        return;
+    }
+
+    if (statsButton.getGlobalBounds().contains(mousePos))
+    {
+        openStats = true;
         return;
     }
 
@@ -333,23 +398,25 @@ void SlotsUI::draw(sf::RenderWindow& window)
             cell.setOutlineColor(sf::Color(110, 80, 160));
             window.draw(cell);
 
-            std::string displayText = "?";
-
             if (hasSpun)
             {
-                displayText = symbolToString(currentWindow.getDisplay(col, row));
+                drawGraphicSymbol(window, currentWindow.getDisplay(col, row),
+                    startX + col * cellW, startY + row * cellH,
+                    cellW - 10.f, cellH - 10.f);
             }
+            else
+            {
+                sf::Text symbol(font, "?", 24);
+                symbol.setFillColor(sf::Color::White);
 
-            sf::Text symbol(font, displayText, 24);
-            symbol.setFillColor(sf::Color::White);
+                sf::FloatRect bounds = symbol.getLocalBounds();
+                symbol.setPosition({
+                    cell.getPosition().x + (cell.getSize().x - bounds.size.x) / 2.f - bounds.position.x,
+                    cell.getPosition().y + (cell.getSize().y - bounds.size.y) / 2.f - bounds.position.y
+                    });
 
-            sf::FloatRect bounds = symbol.getLocalBounds();
-            symbol.setPosition({
-                cell.getPosition().x + (cell.getSize().x - bounds.size.x) / 2.f - bounds.position.x,
-                cell.getPosition().y + (cell.getSize().y - bounds.size.y) / 2.f - bounds.position.y
-                });
-
-            window.draw(symbol);
+                window.draw(symbol);
+            }
         }
     }
 
@@ -362,6 +429,7 @@ void SlotsUI::draw(sf::RenderWindow& window)
     minus10Button.setFillColor(sf::Color(180, 65, 85));
     plus10Button.setFillColor(sf::Color(60, 180, 60));
 
+    statsButton.setFillColor(sf::Color(60, 180, 60));
     backButton.setFillColor(sf::Color(180, 65, 85));
 
     window.draw(minus10Button);
@@ -369,8 +437,11 @@ void SlotsUI::draw(sf::RenderWindow& window)
     window.draw(plus10Button);
 
     window.draw(spinButton);
+    window.draw(statsButton);
     window.draw(backButton);
+    
     window.draw(spinText);
+    window.draw(statsText);
     window.draw(backText);
 
     window.draw(minus10Text);

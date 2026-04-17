@@ -174,7 +174,7 @@ bool Hand::canSplit() const
            getSplitComparableValue(cards[0]) == getSplitComparableValue(cards[1]);
 }
 
-vector<Card> Hand::getCards() const
+const vector<Card>& Hand::getCards() const
 {
     return cards;
 }

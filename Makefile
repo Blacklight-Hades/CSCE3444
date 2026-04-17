@@ -1,4 +1,4 @@
-BREW_PREFIX := $(shell brew --prefix)
+BREW_PREFIX := $(shell brew --prefix 2>/dev/null || echo /opt/homebrew)
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -I$(BREW_PREFIX)/include
 LDFLAGS = -L$(BREW_PREFIX)/lib -lsfml-graphics -lsfml-window -lsfml-system

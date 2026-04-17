@@ -45,7 +45,6 @@ private:
 	double currentbet;		//Stores user bet amount
 	double payout;			//Stores payout
 	bool won;				//true if win, false if no win
-	int spinNum;			//Number of spin we're on in this session
 
 	///*int r1pos;			//possibly redundant
 	//int r2pos;

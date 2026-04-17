@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <string>
 #include <vector>
+#include <map>
 #include "../../../games/blackjack/BlackjackGame.h"
 #include "../../../games/blackjack/Card.h"
 
@@ -16,7 +17,7 @@ public:
     
     void setSessionStats(class SessionStats* stats);
 
-    void handleScreenClick(sf::Vector2f mousePos, bool& backToMenu);
+    void handleScreenClick(sf::Vector2f mousePos, bool& backToMenu, bool& openStats);
     void handleTextEntered(unsigned int unicode);
     void handleBackspace();
     void draw(sf::RenderWindow& window);
@@ -29,16 +30,14 @@ private:
     sf::Text titleText;
     sf::Text bankrollText;
     sf::Text betText;
-    sf::Text dealerText;
-    sf::Text playerText;
     sf::Text messageText;
-    sf::Text statsText;
 
     sf::RectangleShape hitButton;
     sf::RectangleShape standButton;
     sf::RectangleShape doubleButton;
     sf::RectangleShape newRoundButton;
     sf::RectangleShape backButton;
+    sf::RectangleShape statsButton;
 
     sf::RectangleShape plus10Button;
     sf::RectangleShape minus10Button;
@@ -49,6 +48,7 @@ private:
     sf::Text doubleText;
     sf::Text newRoundText;
     sf::Text backText;
+    sf::Text statsText;
     
     sf::Text plus10Text;
     sf::Text minus10Text;
@@ -61,11 +61,17 @@ private:
     bool isTypingBet;
 
     void setupButtons();
+    std::map<std::string, sf::Texture> cardTextures;
+    
+    void loadCardTextures();
+    std::string getCardFilename(const Card& card) const;
+
     void centerTextInButton(sf::Text& text, const sf::RectangleShape& button);
     void refreshBetInputText();
 
-    std::string getDealerDisplay() const;
-    std::string getPlayerDisplay() const;
+    void drawCard(sf::RenderWindow& window, const Card& card, float x, float y) const;
+    void drawHiddenCard(sf::RenderWindow& window, float x, float y) const;
+
     std::string getStatusMessage() const;
     std::string shortenResultText(const std::string& text) const;
     std::string getPostRoundStats() const;

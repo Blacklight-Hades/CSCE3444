@@ -28,6 +28,7 @@ private:
     sf::RenderWindow window;
     sf::Font font;
 
+    AppState currentState;
     std::unique_ptr<MainMenu> mainMenu;
     std::unique_ptr<GameSelect> gameSelect;
     std::unique_ptr<BlackjackUI> blackjackUI;
@@ -35,7 +36,6 @@ private:
     std::unique_ptr<StatsUI> statsUI;
     std::unique_ptr<SessionStats> sessionStats;
 
-    AppState currentState;
     bool bankrollInitialized;
 };
 
