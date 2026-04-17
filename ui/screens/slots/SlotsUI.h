@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <SFML/System/Clock.hpp>
 #include <string>
 #include "../../../games/slots/SlotsGame.h"
 #include "../../../games/slots/SlotWindow.h"
@@ -51,6 +52,10 @@ private:
 
     std::string betInputString;
     bool isTypingBet;
+
+    bool isSpinning;
+    sf::Clock spinClock;
+    std::vector<char> possibleSymbols;
 
     void centerTextInButton(sf::Text& text, const sf::RectangleShape& button);
     void refreshBetInputText();

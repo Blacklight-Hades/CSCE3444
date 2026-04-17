@@ -1,6 +1,7 @@
 #include "SlotsUI.h"
 #include "../../../core/SessionStats.h"
 #include <string>
+#include <cmath>
 
 SlotsUI::SlotsUI(sf::Font& sharedFont)
     : game(1000.0),
@@ -21,7 +22,9 @@ SlotsUI::SlotsUI(sf::Font& sharedFont)
     minus10Text(font, "-10", 18),
     betInputBoxText(font, "", 20),
     betInputString("50"),
-    isTypingBet(false)
+    isTypingBet(false),
+    isSpinning(false),
+    possibleSymbols({'B', 'V', 'M', 'J', 'Q', 'K', 'T', 'S', 'A', 'R', 'W', 'F'})
 {
     titleText.setFillColor(sf::Color(210, 120, 255));
     titleText.setPosition({ 425.f, 40.f });
@@ -82,6 +85,7 @@ void SlotsUI::setStartingBankroll(double bankroll)
     currentBet = 50.0;
     betInputString = "50";
     isTypingBet = false;
+    isSpinning = false;
     lastPayout = 0.0;
     refreshBetInputText();
     updateText();
@@ -264,6 +268,8 @@ void SlotsUI::updateText()
 
 void SlotsUI::handleScreenClick(sf::Vector2f mousePos, bool& backToMenu, bool& openStats)
 {
+    if (isSpinning) return;
+
     backToMenu = false;
     openStats = false;
 
@@ -316,27 +322,20 @@ void SlotsUI::handleScreenClick(sf::Vector2f mousePos, bool& backToMenu, bool& o
             hasSpun = true;
             isTypingBet = false;
             betInputBox.setOutlineColor(sf::Color(210, 120, 255));
+            isSpinning = true;
+            spinClock.restart();
 
-            
-            if (sessionStats)
-            {
-                SlotsRoundSummary summary;
-                summary.betAmount = currentBet;
-                summary.payoutAmount = lastPayout;
-                summary.netChange = lastPayout - currentBet;
-                
-                // check 3 in a row
-                summary.wasThreeInARow = (currentWindow.getDisplay(0, 1) == currentWindow.getDisplay(1, 1) &&
-                                          currentWindow.getDisplay(1, 1) == currentWindow.getDisplay(2, 1));
-                
-                // check jackpot (bar or seven triple)
-                summary.wasJackpot = summary.wasThreeInARow && 
-                                     (currentWindow.getDisplay(0, 1) == 'B' || currentWindow.getDisplay(0, 1) == 'V');
-                                     
-                sessionStats->recordSlotsRound(summary);
-            }
-            
-            updateText();
+            resultText.setString("Spinning...");
+            payoutText.setString("");
+            sf::FloatRect resultBounds = resultText.getLocalBounds();
+            resultText.setPosition({
+                500.f - resultBounds.size.x / 2.f - resultBounds.position.x,
+                500.f
+            });
+
+            // Temporarily show bankroll after bet deduction, before revealing payout
+            double displayBankroll = game.getBankroll() - lastPayout;
+            bankrollText.setString("Bankroll: $" + std::to_string(static_cast<int>(displayBankroll)));
         }
     }
 }
@@ -346,6 +345,32 @@ void SlotsUI::draw(sf::RenderWindow& window)
     sf::RectangleShape background({ 1000.f, 760.f });
     background.setFillColor(sf::Color(18, 0, 40));
     window.draw(background);
+
+    float elapsed = 0.0f;
+    if (isSpinning)
+    {
+        elapsed = spinClock.getElapsedTime().asSeconds();
+        if (elapsed >= 3.0f)
+        {
+            isSpinning = false;
+            if (sessionStats)
+            {
+                SlotsRoundSummary summary;
+                summary.betAmount = currentBet;
+                summary.payoutAmount = lastPayout;
+                summary.netChange = lastPayout - currentBet;
+                
+                summary.wasThreeInARow = (currentWindow.getDisplay(0, 1) == currentWindow.getDisplay(1, 1) &&
+                                          currentWindow.getDisplay(1, 1) == currentWindow.getDisplay(2, 1));
+                
+                summary.wasJackpot = summary.wasThreeInARow && 
+                                     (currentWindow.getDisplay(0, 1) == 'B' || currentWindow.getDisplay(0, 1) == 'V');
+                                     
+                sessionStats->recordSlotsRound(summary);
+            }
+            updateText();
+        }
+    }
 
     for (int i = 0; i < 70; ++i)
     {
@@ -397,15 +422,57 @@ void SlotsUI::draw(sf::RenderWindow& window)
             cell.setOutlineThickness(2.f);
             cell.setOutlineColor(sf::Color(110, 80, 160));
             window.draw(cell);
+        }
+    }
 
+    // Set up clipping view for the reels
+    sf::View prevView = window.getView();
+    sf::FloatRect reelArea({startX, startY}, {3 * cellW, 3 * cellH});
+    sf::View clipView(reelArea);
+    clipView.setViewport(sf::FloatRect(
+        {reelArea.position.x / 1000.f, reelArea.position.y / 760.f},
+        {reelArea.size.x / 1000.f, reelArea.size.y / 760.f}
+    ));
+    window.setView(clipView);
+
+    for (int row = 0; row < 3; ++row)
+    {
+        for (int col = 0; col < 3; ++col)
+        {
             if (hasSpun)
             {
-                drawGraphicSymbol(window, currentWindow.getDisplay(col, row),
-                    startX + col * cellW, startY + row * cellH,
-                    cellW - 10.f, cellH - 10.f);
+                bool columnSpinning = isSpinning && elapsed < (1.0f + col * 1.0f);
+                if (columnSpinning)
+                {
+                    float speed = 800.0f; // pixels per second
+                    float offsetY = std::fmod(elapsed * speed, cellH);
+                    int passedCells = static_cast<int>(elapsed * speed / cellH);
+                    
+                    // Draw two symbols to create continuous dropping effect
+                    char symTop = possibleSymbols[(passedCells + row * 2 + col) % possibleSymbols.size()];
+                    char symBottom = possibleSymbols[(passedCells + 1 + row * 2 + col) % possibleSymbols.size()];
+
+                    // The symbol moving down out of the cell
+                    drawGraphicSymbol(window, symBottom,
+                        startX + col * cellW, startY + row * cellH + offsetY,
+                        cellW - 10.f, cellH - 10.f);
+
+                    // The symbol coming in from the top
+                    drawGraphicSymbol(window, symTop,
+                        startX + col * cellW, startY + row * cellH + offsetY - cellH,
+                        cellW - 10.f, cellH - 10.f);
+                }
+                else
+                {
+                    drawGraphicSymbol(window, currentWindow.getDisplay(col, row),
+                        startX + col * cellW, startY + row * cellH,
+                        cellW - 10.f, cellH - 10.f);
+                }
             }
             else
             {
+                sf::RectangleShape cell({ cellW - 10.f, cellH - 10.f });
+                cell.setPosition({ startX + col * cellW, startY + row * cellH });
                 sf::Text symbol(font, "?", 24);
                 symbol.setFillColor(sf::Color::White);
 
@@ -419,18 +486,19 @@ void SlotsUI::draw(sf::RenderWindow& window)
             }
         }
     }
+    window.setView(prevView);
 
     spinButton.setFillColor(
-        (game.getBankroll() >= currentBet && currentBet > 0.0)
+        (game.getBankroll() >= currentBet && currentBet > 0.0 && !isSpinning)
         ? sf::Color(125, 45, 180)
         : sf::Color(70, 70, 110)
     );
 
-    minus10Button.setFillColor(sf::Color(180, 65, 85));
-    plus10Button.setFillColor(sf::Color(60, 180, 60));
+    minus10Button.setFillColor(isSpinning ? sf::Color(70, 70, 110) : sf::Color(180, 65, 85));
+    plus10Button.setFillColor(isSpinning ? sf::Color(70, 70, 110) : sf::Color(60, 180, 60));
 
-    statsButton.setFillColor(sf::Color(60, 180, 60));
-    backButton.setFillColor(sf::Color(180, 65, 85));
+    statsButton.setFillColor(isSpinning ? sf::Color(70, 70, 110) : sf::Color(60, 180, 60));
+    backButton.setFillColor(isSpinning ? sf::Color(70, 70, 110) : sf::Color(180, 65, 85));
 
     window.draw(minus10Button);
     window.draw(betInputBox);
