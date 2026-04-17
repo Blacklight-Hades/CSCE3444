@@ -36,11 +36,13 @@ void RouletteGame::resolve() {
             lastResult.color
         );
 
-        if (payout > 0)
-            balance += payout + bet.amount;
+        if (payout > 0) {
+            // Won: return original bet + net profit
+            balance += bet.amount + payout;
+        }
+        // If payout <= 0, the bet was already deducted via placeBet()
     }
-
-    bets.clear();
+    // Don't clear bets here; caller can read them for stats then call clearBets()
 }
 
 RouletteRoundResult RouletteGame::getLastResult() const {

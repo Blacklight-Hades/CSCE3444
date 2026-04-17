@@ -7,6 +7,7 @@ enum class AppState
     GameSelect,
     Blackjack,
     Slots,
+    Roulette,
     Stats
 };
 

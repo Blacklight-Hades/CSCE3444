@@ -143,7 +143,11 @@ void StatsUI::updateStats()
         ss << "Spins Played: " << rlStats.getTotalRounds() << "\n\n"
            << "Wins: " << rlStats.getTotalWins() << "\n"
            << "Losses: " << rlStats.getTotalLosses() << "\n\n"
-           << "Straight Up Hits: " << rlStats.getStraightUpHits() << "\n\n\n\n\n\n"
+           << "Best Win (1 spin):  " << formatMoney(rlStats.getBiggestWin()) << "\n"
+           << "Worst Loss (1 spin):  " << formatMoney(-rlStats.getBiggestLoss()) << "\n\n"
+           << "Total Wagered: " << formatMoney(rlStats.getTotalAmountBet()) << "\n"
+           << "Total Payout: " << formatMoney(rlStats.getTotalPayoutReceived()) << "\n\n"
+           << "Straight Up Hits: " << rlStats.getStraightUpHits() << "\n\n"
            << "Win Rate: " << std::fixed << std::setprecision(1) << (rlStats.getWinRate() * 100.0) << "%   |   "
            << "Net: " << formatMoney(rlStats.getNetProfit());
     }

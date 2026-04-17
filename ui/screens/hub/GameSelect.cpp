@@ -254,10 +254,11 @@ void GameSelect::centerTextInButton(sf::Text& text, const sf::RectangleShape& bu
         });
 }
 
-void GameSelect::handleMouseClick(sf::Vector2f mousePos, bool& openBlackjack, bool& openSlots, bool& backToMain)
+void GameSelect::handleMouseClick(sf::Vector2f mousePos, bool& openBlackjack, bool& openSlots, bool& openRoulette, bool& backToMain)
 {
     openBlackjack = false;
     openSlots = false;
+    openRoulette = false;
     backToMain = false;
 
     if (showingGameOverPopup)
@@ -317,7 +318,8 @@ void GameSelect::handleMouseClick(sf::Vector2f mousePos, bool& openBlackjack, bo
     }
     else if (rouletteButton.getGlobalBounds().contains(mousePos))
     {
-        messageText.setString("Roulette does not work right now.");
+        openRoulette = true;
+        messageText.setString("");
     }
     else if (slotsButton.getGlobalBounds().contains(mousePos))
     {

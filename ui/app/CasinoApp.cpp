@@ -18,6 +18,7 @@ CasinoApp::CasinoApp()
     gameSelect = std::make_unique<GameSelect>(font);
     blackjackUI = std::make_unique<BlackjackUI>(font);
     slotsUI = std::make_unique<SlotsUI>(font);
+    rouletteUI = std::make_unique<RouletteUI>(font);
     statsUI = std::make_unique<StatsUI>(font, nullptr);
 }
 
@@ -87,6 +88,17 @@ void CasinoApp::processEvents()
                     slotsUI->handleTextEntered(textEntered->unicode);
                 }
             }
+            else if (currentState == AppState::Roulette)
+            {
+                if (textEntered->unicode == 8)
+                {
+                    rouletteUI->handleBackspace();
+                }
+                else
+                {
+                    rouletteUI->handleTextEntered(textEntered->unicode);
+                }
+            }
 
             continue;
         }
@@ -117,12 +129,14 @@ void CasinoApp::processEvents()
                         statsUI->setSessionStats(sessionStats.get());
                         blackjackUI->setSessionStats(sessionStats.get());
                         slotsUI->setSessionStats(sessionStats.get());
+                        rouletteUI->setSessionStats(sessionStats.get());
                         bankrollInitialized = true;
                     }
 
                     syncGameSelectBankroll();
                     syncBlackjackBankroll();
                     syncSlotsBankroll();
+                    syncRouletteBankroll();
 
                     currentState = AppState::GameSelect;
                 }
@@ -136,6 +150,7 @@ void CasinoApp::processEvents()
                             statsUI->setSessionStats(sessionStats.get());
                             blackjackUI->setSessionStats(sessionStats.get());
                             slotsUI->setSessionStats(sessionStats.get());
+                            rouletteUI->setSessionStats(sessionStats.get());
                         }
                     }
                     statsUI->setReturnState(AppState::MainMenu);
@@ -151,9 +166,10 @@ void CasinoApp::processEvents()
             {
                 bool openBlackjack = false;
                 bool openSlots = false;
+                bool openRoulette = false;
                 bool backToMain = false;
 
-                gameSelect->handleMouseClick(mousePos, openBlackjack, openSlots, backToMain);
+                gameSelect->handleMouseClick(mousePos, openBlackjack, openSlots, openRoulette, backToMain);
                 if (sessionStats) {
                     sessionStats->getBankroll().setBalance(gameSelect->getBankroll());
                 }
@@ -167,6 +183,11 @@ void CasinoApp::processEvents()
                 {
                     syncSlotsBankroll();
                     currentState = AppState::Slots;
+                }
+                else if (openRoulette)
+                {
+                    syncRouletteBankroll();
+                    currentState = AppState::Roulette;
                 }
                 else if (backToMain)
                 {
@@ -187,6 +208,7 @@ void CasinoApp::processEvents()
                     }
                     syncGameSelectBankroll();
                     syncSlotsBankroll();
+                    syncRouletteBankroll();
                     currentState = AppState::GameSelect;
                 }
                 else if (openStats)
@@ -209,11 +231,35 @@ void CasinoApp::processEvents()
                     }
                     syncGameSelectBankroll();
                     syncBlackjackBankroll();
+                    syncRouletteBankroll();
                     currentState = AppState::GameSelect;
                 }
                 else if (openStats)
                 {
                     statsUI->setReturnState(AppState::Slots);
+                    statsUI->updateStats();
+                    currentState = AppState::Stats;
+                }
+            }
+            else if (currentState == AppState::Roulette)
+            {
+                bool backToMenu = false;
+                bool openStats = false;
+                rouletteUI->handleScreenClick(mousePos, backToMenu, openStats);
+
+                if (backToMenu)
+                {
+                    if (sessionStats) {
+                        sessionStats->getBankroll().setBalance(rouletteUI->getCurrentBankroll());
+                    }
+                    syncGameSelectBankroll();
+                    syncBlackjackBankroll();
+                    syncSlotsBankroll();
+                    currentState = AppState::GameSelect;
+                }
+                else if (openStats)
+                {
+                    statsUI->setReturnState(AppState::Roulette);
                     statsUI->updateStats();
                     currentState = AppState::Stats;
                 }
@@ -252,6 +298,10 @@ void CasinoApp::render()
     {
         slotsUI->draw(window);
     }
+    else if (currentState == AppState::Roulette)
+    {
+        rouletteUI->draw(window);
+    }
     else if (currentState == AppState::Stats)
     {
         statsUI->draw(window);
@@ -273,6 +323,11 @@ void CasinoApp::syncBlackjackBankroll()
 void CasinoApp::syncSlotsBankroll()
 {
     if (sessionStats) slotsUI->setStartingBankroll(sessionStats->getCurrentBalance());
+}
+
+void CasinoApp::syncRouletteBankroll()
+{
+    if (sessionStats) rouletteUI->setStartingBankroll(sessionStats->getCurrentBalance());
 }
 
 void CasinoApp::resetSessionIfNeeded()

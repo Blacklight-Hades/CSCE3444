@@ -8,6 +8,7 @@
 #include "../screens/hub/GameSelect.h"
 #include "../screens/blackjack/BlackjackUI.h"
 #include "../screens/slots/SlotsUI.h"
+#include "../screens/roulette/RouletteUI.h"
 #include "../screens/stats/StatsUI.h"
 #include "../../core/SessionStats.h"
 
@@ -23,6 +24,7 @@ private:
     void syncGameSelectBankroll();
     void syncBlackjackBankroll();
     void syncSlotsBankroll();
+    void syncRouletteBankroll();
     void resetSessionIfNeeded();
 
     sf::RenderWindow window;
@@ -33,6 +35,7 @@ private:
     std::unique_ptr<GameSelect> gameSelect;
     std::unique_ptr<BlackjackUI> blackjackUI;
     std::unique_ptr<SlotsUI> slotsUI;
+    std::unique_ptr<RouletteUI> rouletteUI;
     std::unique_ptr<StatsUI> statsUI;
     std::unique_ptr<SessionStats> sessionStats;
 
